@@ -87,7 +87,7 @@ def Numerical(L,tmax,deltat,Nx=101, D=1,C=1):
         u_np1 = B_matrix @ u_n
         U_in.append(u_np1.copy())
         u_n = u_np1
-    if deltat > (deltax)**2/2:
+    if deltat > ((deltax)**2)/2:
         print('warning deltat not small enough/dx too big')
     U_full = np.zeros((Nt,Nx))
     U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (-L/2,L/2)
@@ -112,3 +112,4 @@ ax.set_zlabel('u(x,t)')
 ax.view_init(elev=20, azim=10) # angle of the graph
 
 plt.show()
+
