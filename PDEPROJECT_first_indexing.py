@@ -63,7 +63,7 @@ def beta(deltat,deltax):
 
 def Numerical(L,tmax,deltat,Nx=101):
     xvals = np.linspace(-L/2,L/2,Nx)
-    deltax = L/(2*(Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
+    deltax = L/((Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes --- CHANGED FROM *2 -> TO NO *2
     tvals = np.arange(0,tmax + deltat,deltat)
     x,t = np.meshgrid(xvals,tvals)
     
@@ -85,7 +85,7 @@ def Numerical(L,tmax,deltat,Nx=101):
     return x,t,np.array(U)
 
 
-xn,tn,un = Numerical(10,5,0.05)
+xn,tn,un = Numerical(10,5,0.0005)
     
     
 
@@ -109,3 +109,4 @@ ax.set_zlabel('u(x,t)')
 ax.view_init(elev=20, azim=10)
 
 plt.show()
+
