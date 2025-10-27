@@ -33,7 +33,7 @@ def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
 
     '''
 
-    x_vals = np.linspace(-L / 2, L / 2, Nx)
+    x_vals = np.linspace(-L/2,L/2 , Nx) #maybe 0,L
     t_vals = np.arange(0, Nt, 0.05)
     x,t = np.meshgrid(x_vals,t_vals)  
     u = np.zeros_like(x)
@@ -50,22 +50,42 @@ def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
     return x, t, u
 
 def B(alpha,beta,N):
-    main_diag = beta * np.ones(n)
-    off_diag = alpha * np.ones(n-1)
+    main_diag = beta * np.ones(N)
+    off_diag = alpha * np.ones(N-1)
     B = np.diag(main_diag) + np.diag(off_diag, k=1) + np.diag(off_diag, k=-1)
     return B
 
+def alpha(deltat,deltax):
+    return deltat/(deltax ** 2)
+
+def beta(deltat,deltax):
+    return (1 + deltat -2*alpha(deltat,deltax))
+
 def Numerical(L,tmax,deltat,Nx=101):
     xvals = np.linspace(-L/2,L/2,Nx)
-    xvals_e = dict(enumerate(xvals))
     deltax = L/(2*(Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
-    tvals = np.arange(0,tmax,deltat)
+    tvals = np.arange(0,tmax + deltat,deltat)
     x,t = np.meshgrid(xvals,tvals)
-    print(xvals_e)
-    return xvals
+    
+    initial_u = np.zeros(len(xvals))
+    initial_u[int(len(initial_u)/2)] = 1.0/deltax
+    
+    alpha1 = alpha(deltat,deltax)
+    beta1 = beta(deltat,deltax)
+    
+    B_matrix = B(alpha1,beta1,Nx)
+    u_n = np.array(initial_u) # making code easier to read#
+    
+    U = []
+    #U.append(u_n.copy())
+    for i in range(len(tvals)):
+        u_np1 = B_matrix @ u_n
+        U.append(u_np1.copy())
+        u_n = u_np1
+    return x,t,np.array(U)
 
 
-Numerical(10,5,0.05)
+xn,tn,un = Numerical(10,5,0.05)
     
     
 
@@ -75,11 +95,17 @@ Numerical(10,5,0.05)
 
 x,t,u = Analytical(L=10,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
 
+
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-ax.plot_surface(x,t,u,cmap='viridis') #edgecolor = 'blue'
+ax.plot_surface(xn, tn, un, cmap='viridis')  # edgecolor = 'blue'
+ax.plot_surface(x, t, u, cmap='viridis')
+
 ax.set_title('Analytical Diffusion Equation')
 ax.set_xlabel('x')
 ax.set_ylabel('t')
 ax.set_zlabel('u(x,t)')
+
+ax.view_init(elev=20, azim=10)
+
 plt.show()
