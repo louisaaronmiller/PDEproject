@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
@@ -105,22 +106,29 @@ def Numerical(L,tmax,deltat,Nx=101, D=1,C=1):
     U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (-L/2,L/2)
     return x,t,U_full
 
-if False:
-    for i in np.linspace(4,30,50):    
-        xn,tn,un = Numerical(L=i,tmax = 5,deltat = 0.0005)
+if True:
+    path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif3'
+    for i in np.linspace(2,10,100):    
+        x,t,u = Analytical(L=i,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
         fig = plt.figure()
         ax = plt.axes(projection='3d')
 
-        ax.plot_surface(xn, tn, un, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
+        ax.plot_surface(x, t, u, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
 
-        ax.set_title(f'Numerical Diffusion Equation: L = {i}')
+        ax.set_title(f'Analytical Diffusion Equation: L = {i}')
         ax.set_xlabel('x')
         ax.set_ylabel('t')
         ax.set_zlabel('u(x,t)')
 
         ax.view_init(elev=20, azim=-60) # angle of the graph
 
-        plt.show()
+        filename = f"CriticalLength_LZ{round(i,3)}.png"
+        file_path = os.path.join(path,filename)
+        print(f'graph done!')
+
+        plt.savefig(file_path)
+        plt.close()
+
         
 '''
 xn,tn,un = Numerical(L=10,tmax = 5,deltat = 0.0005)
