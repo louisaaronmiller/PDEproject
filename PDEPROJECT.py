@@ -49,17 +49,29 @@ def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
 
     return x, t, u
 
+def Analytical2(L, Nx,Nt, M,D=1e5,C=1e8):
+
+    x_vals = np.linspace(-L/2,L/2 , Nx) #maybe 0,L
+    t_vals = np.arange(0, Nt, 0.05)
+    x,t = np.meshgrid(x_vals,t_vals)  
+    u = np.zeros_like(x)
+
+    for n in range(1, M +1):
+        eval = (D*(((2*n +1)**2)*(np.pi **2)) - C*L**2)/(L **2)
+        u += (
+            (2 / L)
+            * np.exp(-(((eval) * t)))
+            * np.cos(((2*n + 1)* np.pi * x)/(L))
+        )
+
+    return x, t, u
+
+
 def B(alpha,beta,N):
     main_diag = beta * np.ones(N)
     off_diag = alpha * np.ones(N-1)
     B = np.diag(main_diag) + np.diag(off_diag, k=1) + np.diag(off_diag, k=-1)
     return B
-
-def alpha(deltat,deltax):
-    return deltat/(deltax ** 2)
-
-def beta(deltat,deltax):
-    return (1 + deltat -2*alpha(deltat,deltax))
 
 def Numerical(L,tmax,deltat,Nx=101, D=1,C=1):
     
@@ -98,18 +110,21 @@ xn,tn,un = Numerical(L=10,tmax = 5,deltat = 0.0005)
 
 x,t,u = Analytical(L=10,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
 
+x2,t2,u2 = Analytical2(L=20,Nx = 100,Nt= 5,M= 15, D=1,C=1)
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
+
 ax.plot_surface(xn, tn, un, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
 ax.plot_surface(x, t, u, cmap='viridis',alpha=0.9)
+#ax.plot_surface(x2,t2,u2,cmap='viridis', alpha=0.9)
 
-ax.set_title('Numerical Diffusion Equation')
+ax.set_title('Analytical Diffusion Equation')
 ax.set_xlabel('x')
 ax.set_ylabel('t')
 ax.set_zlabel('u(x,t)')
 
-ax.view_init(elev=20, azim=10) # angle of the graph
+ax.view_init(elev=20, azim=50) # angle of the graph
 
 plt.show()
 
