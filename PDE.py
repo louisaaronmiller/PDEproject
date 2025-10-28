@@ -35,7 +35,7 @@ def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
     '''
 
     x_vals = np.linspace(-L/2,L/2 , Nx) #maybe 0,L
-    t_vals = np.arange(0, Nt, 0.05)
+    t_vals = np.arange(0, Nt, 0.005)
     x,t = np.meshgrid(x_vals,t_vals)  
     u = np.zeros_like(x)
 
@@ -106,25 +106,28 @@ def Numerical(L,tmax,deltat,Nx=101, D=1,C=1):
     U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (-L/2,L/2)
     return x,t,U_full
 
-if True:
-    path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif3'
+if False:
+    path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif4'
+    j = 1
     for i in np.linspace(2,10,100):    
+        #xn,tn,un = Numerical(L=i,tmax = 5,deltat = 0.00005)
         x,t,u = Analytical(L=i,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
         fig = plt.figure()
         ax = plt.axes(projection='3d')
 
         ax.plot_surface(x, t, u, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
 
-        ax.set_title(f'Analytical Diffusion Equation: L = {i}')
+        ax.set_title(f'Analytical Diffusion Equation: L = {round(i,3)}')
         ax.set_xlabel('x')
         ax.set_ylabel('t')
         ax.set_zlabel('u(x,t)')
 
         ax.view_init(elev=20, azim=-60) # angle of the graph
 
-        filename = f"CriticalLength_LZ{round(i,3)}.png"
+        filename = f"CriticalLength_L{round(j)}.png"
         file_path = os.path.join(path,filename)
         print(f'graph done!')
+        j += 1
 
         plt.savefig(file_path)
         plt.close()
