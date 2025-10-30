@@ -81,11 +81,44 @@ def B_partb(alpha,beta,N):
     return B
     
 
+def indexfinder(xvals,L):
+    '''
+    This function returns the index of the array where the first value is
+    greater than -L/2 and the returns the last index corresponding to the
+    x value that is less than L/2
+    
+    This is mainly only for x values with ranges expanded by a constant alpha say,
+    part D of project.
+    '''
+    firstindex = None
+    secondindex = None
+    
+    for key,x in enumerate(xvals):
+        if firstindex is None and x > -L/2: # first x value that is inside the range
+            firstindex = key
+        if x < L/2: # keys updating until the range x is out of the range, therefore the last x value's index
+            secondindex = key
+    return (firstindex, secondindex)
+
+def B_partd(N,firstindex,secondindex,D,C,deltat,deltax):
+    
+    alpha = D * deltat / deltax**2
+    beta = 1.0 + C * deltat - 2.0 * alpha
+    
+    beta0 = 1.0 - 2.0 * alpha # used when |x| < L/2
+    
+    main_diag = beta0 * np.ones(N) # creates an array with betas the same size as the diaganol in the matrix
+    main_diag[firstindex:secondindex +1] = beta # changes the array within this range to beta0 eg. [beta,beta,beta,beta0,beta0,beta,beta,beta]
+    
+    off_diag = alpha * np.ones(N-1)
+    B = np.diag(main_diag) + np.diag(off_diag, k=1) + np.diag(off_diag, k=-1)
+    return B
+
 def Numerical(L,tmax,deltat,Nx=101, D=1,C=1):
     
     xvals = np.linspace(-L/2,L/2,Nx)
     deltax = L/((Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
-    tvals = np.arange(0,tmax + deltat,deltat)
+    tvals = np.arange(0,tmax + deltat,deltat) # + deltat to make sure everything syncs
     Nt = len(tvals)
     
     x_in = xvals[1:-1] # defining an interior (not including boundary conditions)
@@ -143,6 +176,41 @@ def Numerical_partb(L,tmax,deltat,Nx=101, D=1,C=1):
     U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (-L/2,L/2)
     return x,t,U_full
 
+def NumericalD(L,tmax,deltat,a,Nx=101, D=1,C=1):
+    '''
+    a = a constant that multiplies the range if L 
+    '''
+
+    xvals = np.linspace(-a * (L/2), a * (L/2),Nx)
+    deltax = L/((Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
+    tvals = np.arange(0,tmax + deltat,deltat) # + deltat to make sure everything syncs
+    Nt = len(tvals)
+    
+    x_in = xvals[1:-1] # defining an interior (not including boundary conditions)
+    N_in = len(x_in)
+    x,t = np.meshgrid(xvals,tvals)
+    
+    initial_u = np.zeros(N_in)
+    initial_u[int(len(initial_u)/2)] = 1.0/deltax
+    
+    
+    firstindex = indexfinder(xvals,L)[0]
+    secondindex = indexfinder(xvals,L)[-1]
+    B_matrix = B_partd(N_in,firstindex,secondindex,D,C,deltat,deltax) # doesn't include boundary conditions
+    
+    u_n = np.array(initial_u) # making code easier to read
+    U_in = [u_n.copy()] # doesn't include boundary conditions
+    #U.append(u_n.copy())
+    for _ in range(Nt-1):
+        u_np1 = B_matrix @ u_n
+        U_in.append(u_np1.copy())
+        u_n = u_np1
+    if deltat > ((deltax)**2)/2:
+        print('warning deltat not small enough/dx too big')
+    U_full = np.zeros((Nt,Nx))
+    U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (-L/2,L/2)
+    return x,t,U_full
+
 
 # ------------------------- Results -------------------------
 
@@ -153,6 +221,8 @@ xn,tn,un = Numerical(L=10,tmax = 5,deltat = 0.0005)
 x,t,u = Analytical(L=10,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
 
 x2,t2,u2 = Analytical2(L=20,Nx = 100,Nt= 5,M= 15, D=1,C=1)
+
+xd,td,ud = NumericalD(L=50,tmax = 5, deltat = 0.00005,a=6)
 
 # ------------------------- Animations -------------------------
 
@@ -227,21 +297,41 @@ if False: # This shows that partb is the same L approximately equal to pi when i
          ax.view_init(elev=20, azim=-50) # angle of the graph
     
          plt.show()
+         
+if False:
+    for i in np.linspace(2.5,5,50):
+         xd,td,ud = NumericalD(L=i,tmax=5,deltat = 0.00005,a=6)
+         
+         fig = plt.figure()
+         ax = plt.axes(projection='3d')
+         ax.plot_surface(xd,td,ud,cmap='viridis', alpha=0.9)
+     
+     
+         ax.set_title(f'Numerical Diffusion Equation L={round(i,3)}')
+         ax.set_xlabel('x')
+         ax.set_ylabel('t')
+         ax.set_zlabel('u(x,t)')
+     
+         ax.view_init(elev=20, azim=-50) # angle of the graph
+    
+         plt.show()
 
 # ------------------------- Normal Plotting -------------------------
 
 
-'''
+
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
 #ax.plot_surface(xn, tn, un, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
 #ax.plot_surface(x, t, u, cmap='viridis',alpha=0.9)
 #ax.plot_surface(x2,t2,u2,cmap='viridis', alpha=0.9)
-ax.plot_surface(xb,tb,ub,cmap='viridis', alpha=0.9)
+#ax.plot_surface(xb,tb,ub,cmap='viridis', alpha=0.9)
+ax.plot_surface(xd,td,ud,cmap='viridis', alpha=0.9)
 
 
-ax.set_title('Analytical Diffusion Equation')
+#ax.set_title('Analytical Diffusion Equation')
+ax.set_title('Numerical Diffusion Equation')
 ax.set_xlabel('x')
 ax.set_ylabel('t')
 ax.set_zlabel('u(x,t)')
@@ -249,4 +339,3 @@ ax.set_zlabel('u(x,t)')
 ax.view_init(elev=20, azim=-20) # angle of the graph
 
 plt.show()
-'''
