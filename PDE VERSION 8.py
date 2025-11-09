@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+#region ------------------------------------------------------------------------ QUESTION ONE ------------------------------------------------------------------------
+
 # ------------------------- Functions -------------------------
 def Analytical(L, Nx,Nt, M,D=1e5,C=1e8):
     '''
@@ -241,7 +243,7 @@ def NumericalD(L,tmax,deltat,a,Nx=101, D=1,C=1):
     return x,t,U_full
 
 
-# ------------------------- Results -------------------------
+#region ------------------------- Results -------------------------
 
 xb,tb,ub = Numerical_partb(L=3,tmax=5,deltat = 0.00005)
 
@@ -251,12 +253,14 @@ x,t,u = Analytical(L=10,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
 
 x2,t2,u2 = Analytical2(L=20,Nx = 100,Nt= 5,M= 15, D=1,C=1)
 
-xd,td,ud = NumericalD(L=0.8,tmax = 5, deltat = 0.00005,a=6)
+xd,td,ud = NumericalD(L=1.12,tmax = 5, deltat = 0.00005,a=2)
 
 xC,tC,uC = AnalyticalC(L=1,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
 
-# ------------------------- Animations -------------------------
-#region - Animation
+#endregion
+
+#region ------------------------- Animations -------------------------
+
 if False:
     path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif4'
     j = 1
@@ -346,11 +350,12 @@ if False:
     
          plt.show()
 
-#endregion - Animation
+#endregion
+
 # ------------------------- Normal Plotting -------------------------
 
 
-print(B_partb(3,1,5))
+
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
@@ -370,4 +375,153 @@ ax.set_zlabel('u(x,t)')
 
 ax.view_init(elev=20, azim=-20) # angle of the graph
 
+plt.close()
+
+#endregion
+
+#region ------------------------------------------------------------------------ QUESTION TWO ------------------------------------------------------------------------
+
+#region ------------------------- Functions -------------------------
+
+def AnalyticalWave(Nx,Nt, M=15):
+    '''
+    Wave equation, n can't be equal to 16 in the summation due to Dn.
+    Dn has a term with a denominator n-16, thus when n=16 this is infinite or
+    undefined, thus approximations up to 16 will have to do.
+
+    '''
+
+    x_vals = np.linspace(0,2 *np.pi , Nx)
+    t_vals = np.arange(0, Nt, 0.005)
+    x,t = np.meshgrid(x_vals,t_vals)  
+    u = np.zeros_like(x)
+
+    for n in range(1, M +1):
+        if n == 16:
+            Bn = ((4)/(n * np.pi)) * np.sin((n * np.pi)/(2)) * np.sin(n/2)
+            Dn = 0
+            u += (Bn * np.cos(n*t) + Dn * np.sin(n*t)) * np.sin((n * x)/2)
+            continue
+        Bn = ((4)/(n * np.pi)) * np.sin((n * np.pi)/(2)) * np.sin(n/2)
+        Dn = (1/(n * np.pi)) * (((2 * (np.pi ** 2)* (-1)**n) * (1/(n+16) + 1/(n-16) -2/n)) + (((-1)**n) -1)* (8/(n**3) -4/((n+16)**3)-4/((n-16)**3)))
+        u += (Bn * np.cos(n*t) + Dn * np.sin(n*t)) * np.sin((n * x)/2)
+
+    return x, t, u
+
+def indexfinderWave(xvals):
+    '''
+    This function returns the index of the array where the first value is
+    greater than pi - 1 and the returns the last index corresponding to the
+    x value that is less than pi + 1
+    '''
+    firstindex = None
+    secondindex = None
+    
+    for key,x in enumerate(xvals):
+        if firstindex is None and x >= np.pi - 1: # first x value that is inside the range
+            firstindex = key
+        if x <= np.pi + 1: # keys updating until the range x is out of the range, therefore the last x value's index
+            secondindex = key
+    return (firstindex, secondindex)
+
+def NumericalWave(tmax,deltat,Nx=101):
+    
+    xvals = np.linspace(0,2 * np.pi,Nx)
+    deltax = (2*np.pi)/((Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
+    tvals = np.arange(0,tmax + deltat,deltat) # + deltat to make sure everything syncs
+    Nt = len(tvals)
+    
+    x_in = xvals[1:-1] # defining an interior (not including boundary conditions)
+    N_in = len(x_in)
+    x,t = np.meshgrid(xvals,tvals)
+    
+    firstindex, secondindex = indexfinderWave(x_in)
+    initial_u_0 = np.zeros(N_in)
+    for i in range(0,N_in):
+        if i >= firstindex and i <= secondindex:
+            initial_u_0[i] = 1
+
+    initial_u_1 = np.zeros(N_in)
+    for i in range(0,N_in):
+        if i >= firstindex and i <= secondindex:
+            initial_u_1[i] = deltat * (x_in[i]**2) * ((np.sin(4*x_in[i])) **2) +1
+        else:
+            initial_u_1[i] = deltat * (x_in[i]**2) * ((np.sin(4*x_in[i])) **2)
+    
+    alpha = (4 * (deltat)**2) / deltax**2
+    beta = 2 * (1 - alpha) 
+    
+    B_matrix = B(alpha,beta,N_in) # doesn't include boundary conditions
+    u_n0 = np.array(initial_u_0) # making code easier to read
+    u_n1 = np.array(initial_u_1)
+    U_in = [u_n0.copy(), u_n1.copy()] # doesn't include boundary conditions
+    #U.append(u_n.copy())
+    for _ in range(Nt-2):
+        u_np1 = (B_matrix @ u_n1) - u_n0
+        U_in.append(u_np1.copy())
+        u_n0, u_n1 = u_n1, u_np1
+    if deltat > deltax/2:
+        print('Δt too large, may be unstable')
+    U_full = np.zeros((Nt,Nx))
+    U_full[:,1:-1] = np.array(U_in) # adding on boundary condition results i.e. 0 at start of x and end x spectrum (0,2pi)
+    return x,t,U_full
+#endregion
+#region ------------------------- Results -------------------------
+
+xaw,taw,uaw = AnalyticalWave(100,5)
+xnw,tnw,unw = NumericalWave(5,0.0005)
+
+#endregion
+#region ------------------------- Plotting -------------------------
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+
+#ax.plot_surface(xaw,taw,uaw,cmap='viridis', alpha=0.9)
+
+ax.plot_surface(xnw,tnw,unw,cmap='viridis', alpha=0.9)
+
+ax.set_title('Numerical Wave Equation')
+ax.set_xlabel('x')
+ax.set_ylabel('t')
+ax.set_zlabel('u(x,t)')
+
+ax.view_init(elev=20, azim=-10) # angle of the graph
+
 plt.show()
+
+#endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#endregion
