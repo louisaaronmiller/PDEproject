@@ -123,7 +123,7 @@ def CriticalLengthFinder2(Lvals, tmax, deltat, Nx=101, D=1, C=1):
     L_arr = []
 
     for L in Lvals:
-        _, _, u = Numerical(L, tmax, deltat, Nx=Nx, D=D, C=C)
+        _, _, u = Numerical_partb(L, tmax, deltat, Nx=Nx, D=D, C=C)
         lam = growth_rate(u)
 
         results.append((lam))
@@ -316,13 +316,73 @@ def Numerical_partb(L,tmax,deltat,Nx=101, D=1,C=1):
     # It doesn't really 'add' I have created a background of zeros and we are just slotting in leaving the last column of zeros there.
     return x,t,U_full
 
+def B_partc(alpha,beta,N):
+    if N < 3:
+        raise ValueError("N must be >= 3 for this structure.")
+
+    B = np.zeros((N, N), dtype=float)
+
+    # Fill main diagonal
+    np.fill_diagonal(B, beta)
+
+    # Fill tridiagonals
+    for i in range(1, N):
+        B[i, i-1] = alpha
+        B[i-1, i] = alpha
+
+    # -------- FIRST ROW --------
+    B[0, :] = 0.0
+    B[0, 0] = beta + alpha
+    B[0, 2] = alpha   # if N > 2, guaranteed since N>=3
+
+    # -------- LAST ROW --------
+    B[-1, :] = 0.0
+    B[-1, -1] = beta + alpha
+    B[-1, -3] = alpha   # the "alpha" before the 0, then (beta+alpha)
+
+    return B
+
+def Numerical_partc(L,tmax,deltat,Nx=101, D=1,C=1):
+    
+    xvals = np.linspace(-L/2,L/2,Nx)
+    deltax = L/((Nx-1)) # Nx - 1 because it makes numbers nice, and its in notes
+    tvals = np.arange(0,tmax + deltat,deltat)
+    Nt = len(tvals)
+    
+    x_in = xvals # This all since here we don't apend a column of zeros anywhere.
+    N_in = len(x_in)
+    x,t = np.meshgrid(xvals,tvals)
+    
+    initial_u = np.zeros(N_in)
+    initial_u[int(len(initial_u)/2)] = 1.0/deltax
+    
+    alpha = D * deltat / deltax**2
+    beta = 1.0 + C * deltat - 2.0 * alpha
+    
+    B_matrix = B_partc(alpha,beta,N_in) # doesn't include L/2 boundary condition (includes -L/2 Neumann)
+    u_n = np.array(initial_u) # making code easier to read
+    U_in = [u_n.copy()]
+    
+    for _ in range(Nt- 1): #Nt -1
+        u_np1 = B_matrix @ u_n
+        U_in.append(u_np1.copy())
+        u_n = u_np1
+        
+    if deltat > ((deltax)**2)/2:
+        print('warning deltat not small enough/dx too big')
+    U_full = np.zeros((Nt,Nx))
+    U_full = np.array(U_in) 
+    return x,t,U_full
+
 def AnalyticalC(L, Nx,Nt, M,D=1e5,C=1e8):
     x_vals = np.linspace(-L/2,L/2 , Nx) #maybe 0,L
     t_vals = np.arange(0, Nt, 0.005)
     x,t = np.meshgrid(x_vals,t_vals)  
     u = np.zeros_like(x)
 
-    for n in range(0, M +1):
+    u += (1/L) * np.exp(C * t) # first term.
+
+    for n in range(1, M +1): # from n=1 onwards
         eval = (D*((n*np.pi)/L)**2) - C
         u += (
             (2 / L)
@@ -381,7 +441,9 @@ x2,t2,u2 = Analytical2(L=3,Nx = 100,Nt= 5,M= 15, D=1,C=1)
 
 xd,td,ud = NumericalD(L=1.12,tmax = 5, deltat = 0.00005,a=2)
 
-xC,tC,uC = AnalyticalC(L=1,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
+x3,t3,u3 = AnalyticalC(L=3.14,Nx = 100,Nt = 5,M = 15,D = 1,C = 1)
+
+xC,tC,uC = Numerical_partc(L=3.14,tmax = 5,deltat = 0.00005)
 
 #endregion
 
@@ -476,23 +538,78 @@ if False:
     
          plt.show()
 
+if False:
+    path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif5'
+    j = 1
+    for i in np.linspace(1,3,50):
+        xb,tb,ub = Numerical_partb(L=i,tmax=5,deltat = 0.00005)
+        
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot_surface(xb,tb,ub,cmap='viridis', alpha=0.9)
+    
+    
+        ax.set_title(f'Numerical Diffusion Equation L={round(i,3)}')
+        ax.set_xlabel('x')
+        ax.set_ylabel('t')
+        ax.set_zlabel('u(x,t)')
+    
+        ax.view_init(elev=20, azim=-20) # angle of the graph
+
+
+        filename = f"CriticalLength_L{round(j)}.png"
+        file_path = os.path.join(path,filename)
+        print(f'graph done!')
+        j += 1
+
+        plt.savefig(file_path)
+        plt.close()
+
+
+if False:
+    path = r'C:\Users\fowar\OneDrive\Desktop\Folder\university\picgif6'
+    j = 1
+    for i in np.linspace(1,3,50):
+        x2,t2,u2 = Analytical2(L=i,Nx = 100,Nt= 5,M= 15, D=1,C=1)
+        
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.plot_surface(x2,t2,u2,cmap='viridis', alpha=0.9)
+    
+    
+        ax.set_title(f'Analytical Diffusion Equation L={round(i,3)}')
+        ax.set_xlabel('x')
+        ax.set_ylabel('t')
+        ax.set_zlabel('u(x,t)')
+    
+        ax.view_init(elev=20, azim=-20) # angle of the graph
+
+
+        filename = f"CriticalLength_L{round(j)}.png"
+        file_path = os.path.join(path,filename)
+        print(f'graph done!')
+        j += 1
+
+        plt.savefig(file_path)
+        plt.close()
+
 #endregion
 
 # ------------------------- Normal Plotting -------------------------
 
-#L, approx = CriticalLengthFinder2(Lvals=np.linspace(3.13,3.15,100), tmax=5, deltat=0.00005, Nx=101, D=1, C=1)
+#L, approx = CriticalLengthFinder2(Lvals=np.linspace(1.54,1.60,100), tmax=5, deltat=0.00005, Nx=101, D=1, C=1)
 '''
 plt.plot(L,approx)
 plt.minorticks_on()
 plt.grid(True)
 plt.xlabel('$L$')
 plt.ylabel('$\\lambda_A$')
-plt.title('Numerical Critical Length')
-plt.xlim(3.04,3.24)
+plt.title('Numerical Critical Length (Neumann & Dirichlet Boundary Condition)')
+plt.xlim(1.55,1.59)
 plt.ylim(-0.25e-5,0.25e-5)
 plt.axhline(y=0, color='r', linestyle='--')
-plt.plot([np.pi,np.pi],[-5, 0],'--k')
-plt.scatter([np.pi],[0],color = 'k')
+plt.plot([1.5785,1.5785],[-5, 0],'--k')
+plt.scatter([1.5785],[0],color = 'k')
 #plt.plot(np.linspace(0,20,len(L)),[0] * len(L), color='r', linestyle='--')
 '''
 fig = plt.figure()
@@ -500,14 +617,15 @@ ax = plt.axes(projection='3d')
 
 #ax.plot_surface(xn, tn, un, cmap='viridis',alpha=0.9)  # edgecolor = 'blue'
 #ax.plot_surface(x, t, u, cmap='viridis',alpha=0.9)
-ax.plot_surface(x2,t2,u2,cmap='viridis', alpha=0.9)
-ax.plot_surface(xb,tb,ub,cmap='viridis', alpha=0.9)
-#ax.plot_surface(xC,tC,uC,cmap='viridis', alpha=0.9)
+#ax.plot_surface(x2,t2,u2,cmap='viridis', alpha=0.9)
+#ax.plot_surface(xb,tb,ub,cmap='viridis', alpha=0.9)
+ax.plot_surface(xC,tC,uC,cmap='viridis', alpha=0.9)
+#ax.plot_surface(x3,t3,u3,cmap='viridis', alpha=0.9)
 #ax.plot_surface(xd,td,ud,cmap='viridis', alpha=0.9)
 
 
 #ax.set_title('Analytical Diffusion Equation')
-ax.set_zlim(0, 17.5)
+#ax.set_zlim(0, 17.5)
 ax.set_title('Numerical Diffusion Equation')
 ax.set_xlabel('x')
 ax.set_ylabel('t')
