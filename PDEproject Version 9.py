@@ -159,15 +159,12 @@ def B_partb(alpha,beta,N): # uses ghost point - first row is beta, 2alpha,0,...
 def B_partb2ANOTHERFAILQUESTIONMARK(alpha,beta,N):
     B = np.zeros((N, N), dtype=float)
 
-    # Fill main diagonal
     np.fill_diagonal(B, beta)
 
-    # Add tridiagonals
     for i in range(1, N):
         B[i, i-1] = alpha
         B[i-1, i] = alpha
 
-    # Neumann modification: beta -> beta + alpha on first element
     B[0, 0] = beta + alpha
 
     return B
@@ -177,22 +174,17 @@ def B_partb3(alpha,beta,N): # first row is (beta + alpha), 0, alpha
         raise ValueError("N must be >= 2")
     B = np.zeros((N, N), dtype=float)
 
-    # Fill main diagonal
     np.fill_diagonal(B, beta)
 
-    # Add tridiagonals for i>=1
     for i in range(1, N):
         B[i, i-1] = alpha
         B[i-1, i] = alpha
 
-    # Modify first row / first diagonal element per your request
     B[0, 0] = beta + alpha
-
-    # Set the (0,1) entry to zero (we want 0 there)
+    
     if N > 1:
         B[0, 1] = 0.0
 
-    # Put alpha in (0,2) if that column exists
     if N > 2:
         B[0, 2] = alpha
 
@@ -204,18 +196,15 @@ def B_partb4(alpha,beta,N): # first row is 0, (beta + alpha), alpha
 
     B = np.zeros((N, N), dtype=float)
 
-    # Fill main diagonal
     np.fill_diagonal(B, beta)
 
-    # Fill tridiagonals
     for i in range(1, N):
         B[i, i-1] = alpha
         B[i-1, i] = alpha
 
-    # Overwrite the first row:
     B[0, :] = 0.0
-    B[0, 1] = beta + alpha   # column 1
-    B[0, 2] = alpha          # column 2
+    B[0, 1] = beta + alpha   
+    B[0, 2] = alpha        
 
     return B
 
@@ -318,27 +307,23 @@ def Numerical_partb(L,tmax,deltat,Nx=101, D=1,C=1):
 
 def B_partc(alpha,beta,N):
     if N < 3:
-        raise ValueError("N must be >= 3 for this structure.")
+        raise ValueError("N must be >= 3")
 
     B = np.zeros((N, N), dtype=float)
 
-    # Fill main diagonal
     np.fill_diagonal(B, beta)
 
-    # Fill tridiagonals
     for i in range(1, N):
         B[i, i-1] = alpha
         B[i-1, i] = alpha
 
-    # -------- FIRST ROW --------
     B[0, :] = 0.0
     B[0, 0] = beta + alpha
-    B[0, 2] = alpha   # if N > 2, guaranteed since N>=3
+    B[0, 2] = alpha   
 
-    # -------- LAST ROW --------
     B[-1, :] = 0.0
     B[-1, -1] = beta + alpha
-    B[-1, -3] = alpha   # the "alpha" before the 0, then (beta+alpha)
+    B[-1, -3] = alpha  
 
     return B
 
