@@ -5,4 +5,4 @@
 
 `PDEPROJECT.py` is the final version of the Python code used for the project.
 
-`PDELOUISMILLER.pdf` details the written project.
+`PDEPROJECTFINAL.pdf` details the written project.
